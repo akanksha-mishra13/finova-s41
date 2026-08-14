@@ -1,14 +1,17 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+
 @import "tailwindcss";
 
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
 
   color: #17211f;
-  background: #f7f8f6;
+  background: #f7f9f8;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
@@ -23,7 +26,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #f7f8f6;
+  background: #f7f9f8;
 }
 
 button,
@@ -35,4 +38,26 @@ select {
 
 button {
   cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f4f2;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd6d1;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9eafa7;
 }

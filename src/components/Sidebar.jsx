@@ -12,38 +12,48 @@ import {
   ChevronLeft,
 } from "lucide-react";
 
+import { NavLink } from "react-router-dom";
+
 const mainNavigation = [
   {
     name: "Overview",
     icon: Home,
+    path: "/dashboard",
   },
   {
     name: "Money",
     icon: Wallet,
+    path: "/money",
   },
   {
     name: "Financial Health",
     icon: HeartPulse,
+    path: "/health",
   },
   {
     name: "Goals",
     icon: Target,
+    path: "/goals",
   },
   {
     name: "Decision Lab",
     icon: FlaskConical,
+    path: "/decision-lab",
   },
   {
     name: "Credit Readiness",
     icon: CreditCard,
+    path: "/credit",
   },
   {
     name: "Alternatives",
     icon: HandCoins,
+    path: "/alternatives",
   },
   {
     name: "AI Copilot",
     icon: Bot,
+    path: "/ai",
   },
 ];
 
@@ -51,10 +61,12 @@ const bottomNavigation = [
   {
     name: "Consent Center",
     icon: ShieldCheck,
+    path: "/consent",
   },
   {
     name: "Settings",
     icon: Settings,
+    path: "/settings",
   },
 ];
 
@@ -62,8 +74,10 @@ function Sidebar() {
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-[260px] flex-col bg-[#123C35] px-4 py-6 text-white">
 
-      {/* Logo */}
+      {/* LOGO */}
+
       <div className="mb-8 flex items-center justify-between px-3">
+
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             FINOVA
@@ -74,12 +88,18 @@ function Sidebar() {
           </p>
         </div>
 
-        <button className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-white">
+        <button
+          type="button"
+          className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-white"
+        >
           <ChevronLeft size={18} />
         </button>
+
       </div>
 
-      {/* Main Navigation */}
+
+      {/* MAIN NAVIGATION */}
+
       <div className="flex-1">
 
         <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
@@ -87,58 +107,91 @@ function Sidebar() {
         </p>
 
         <nav className="space-y-1">
+
           {mainNavigation.map((item) => {
+
             const Icon = item.icon;
 
             return (
-              <button
+              <NavLink
                 key={item.name}
-                className={`group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
-                  item.name === "Overview"
-                    ? "bg-[#B9E8D0] font-semibold text-[#123C35]"
-                    : "text-white/70 hover:bg-white/10 hover:text-white"
-                }`}
+                to={item.path}
+                className={({ isActive }) =>
+                  `group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
+                    isActive
+                      ? "bg-[#B9E8D0] font-semibold text-[#123C35]"
+                      : "text-white/70 hover:bg-white/10 hover:text-white"
+                  }`
+                }
               >
+
                 <Icon
                   size={19}
                   strokeWidth={1.8}
-                  className="shrink-0"
                 />
 
-                <span>{item.name}</span>
-              </button>
+                <span>
+                  {item.name}
+                </span>
+
+              </NavLink>
             );
           })}
+
         </nav>
+
       </div>
 
-      {/* Bottom Navigation */}
+
+      {/* BOTTOM */}
+
       <div className="border-t border-white/10 pt-4">
 
         <nav className="space-y-1">
+
           {bottomNavigation.map((item) => {
+
             const Icon = item.icon;
 
             return (
-              <button
+              <NavLink
                 key={item.name}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-white/60 transition hover:bg-white/10 hover:text-white"
+                to={item.path}
+                className={({ isActive }) =>
+                  `flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
+                    isActive
+                      ? "bg-white/10 text-white"
+                      : "text-white/60 hover:bg-white/10 hover:text-white"
+                  }`
+                }
               >
-                <Icon size={19} strokeWidth={1.8} />
 
-                <span>{item.name}</span>
-              </button>
+                <Icon
+                  size={19}
+                  strokeWidth={1.8}
+                />
+
+                <span>
+                  {item.name}
+                </span>
+
+              </NavLink>
             );
           })}
+
         </nav>
 
-        {/* User */}
+
+        {/* USER */}
+
         <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/5 p-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#B9E8D0] text-sm font-bold text-[#123C35]">
+
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B9E8D0] text-sm font-bold text-[#123C35]">
             AM
           </div>
 
           <div className="min-w-0">
+
             <p className="truncate text-sm font-medium">
               Akanksha
             </p>
@@ -146,10 +199,13 @@ function Sidebar() {
             <p className="truncate text-xs text-white/40">
               Personal account
             </p>
+
           </div>
+
         </div>
 
       </div>
+
     </aside>
   );
 }

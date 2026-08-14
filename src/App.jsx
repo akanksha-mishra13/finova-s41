@@ -1,44 +1,111 @@
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+
 import Sidebar from "./components/Sidebar";
-import Navbar from "./components/Navbar";
+
+import Landing from "./pages/Landing";
+import Dashboard from "./pages/Dashboard";
+import Money from "./pages/Money";
+import FinancialHealth from "./pages/FinancialHealth";
+import Goals from "./pages/Goals";
+import DecisionLab from "./pages/DecisionLab";
+import CreditReadiness from "./pages/CreditReadiness";
+import Alternatives from "./pages/Alternatives";
+import AICopilot from "./pages/AICopilot";
+import Consent from "./pages/Consent";
+import Settings from "./pages/Settings";
+
+function DashboardLayout() {
+  return (
+    <div className="min-h-screen bg-[#F7F9F8]">
+
+      <Sidebar />
+
+      <main className="min-h-screen ml-[260px] p-6 lg:p-8">
+
+        <Routes>
+
+          <Route
+            path="/dashboard"
+            element={<Dashboard />}
+          />
+
+          <Route
+            path="/money"
+            element={<Money />}
+          />
+
+          <Route
+            path="/health"
+            element={<FinancialHealth />}
+          />
+
+          <Route
+            path="/goals"
+            element={<Goals />}
+          />
+
+          <Route
+            path="/decision-lab"
+            element={<DecisionLab />}
+          />
+
+          <Route
+            path="/credit"
+            element={<CreditReadiness />}
+          />
+
+          <Route
+            path="/alternatives"
+            element={<Alternatives />}
+          />
+
+          <Route
+            path="/ai"
+            element={<AICopilot />}
+          />
+
+          <Route
+            path="/consent"
+            element={<Consent />}
+          />
+
+          <Route
+            path="/settings"
+            element={<Settings />}
+          />
+
+          <Route
+            path="*"
+            element={<Navigate to="/dashboard" replace />}
+          />
+
+        </Routes>
+
+      </main>
+
+    </div>
+  );
+}
 
 function App() {
   return (
-    <div className="min-h-screen bg-[#F7F8F6]">
+    <BrowserRouter>
 
-      {/* Sidebar */}
-      <Sidebar />
+      <Routes>
 
-      {/* Main Application */}
-      <div className="ml-[260px] min-h-screen">
+        <Route
+          path="/"
+          element={<Landing />}
+        />
 
-        {/* Navbar */}
-        <Navbar />
+        <Route
+          path="/*"
+          element={<DashboardLayout />}
+        />
 
-        {/* Page Content */}
-        <main className="p-8">
+      </Routes>
 
-          <div className="rounded-2xl border border-[#E5EAE7] bg-white p-8">
-
-            <p className="text-sm font-medium text-[#66736F]">
-              FINOVA DASHBOARD
-            </p>
-
-            <h1 className="mt-2 text-3xl font-bold text-[#123C35]">
-              Your financial future starts here.
-            </h1>
-
-            <p className="mt-3 max-w-2xl text-[#66736F]">
-              Understand your financial health, explore better decisions,
-              and build a stronger financial future with AI-powered guidance.
-            </p>
-
-          </div>
-
-        </main>
-
-      </div>
-
-    </div>
+    </BrowserRouter>
   );
 }
 
