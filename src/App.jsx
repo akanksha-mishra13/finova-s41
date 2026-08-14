@@ -1,8 +1,15 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
+import { Menu } from "lucide-react";
 
 import Sidebar from "./components/Sidebar";
 
-// Pages
 import Landing from "./pages/Landing";
 import Dashboard from "./pages/Dashboard";
 import Money from "./pages/Money";
@@ -17,135 +24,99 @@ import Consent from "./pages/Consent";
 import Settings from "./pages/Settings";
 
 
-// --------------------------------------------------
-// DASHBOARD LAYOUT
-// --------------------------------------------------
-
 function DashboardLayout() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-[#F7F9F8]">
 
-      {/* Sidebar */}
-      <Sidebar />
+      <Sidebar
+        mobileOpen={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+      />
+
+      {/* Mobile Header */}
+
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
+
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="rounded-lg p-2 text-slate-700 hover:bg-slate-100"
+        >
+          <Menu size={22} />
+        </button>
+
+        <div className="text-lg font-bold text-[#123C35]">
+          FINOVA
+        </div>
+
+        <div className="h-8 w-8 rounded-full bg-[#B9E8D0] text-center text-sm font-bold leading-8 text-[#123C35]">
+          AM
+        </div>
+
+      </header>
+
 
       {/* Main Content */}
-      <main className="min-h-screen ml-[260px] p-6 lg:p-8">
+
+      <main className="min-h-screen px-4 py-5 sm:px-6 lg:ml-[260px] lg:p-8">
 
         <Routes>
-
-          {/* ---------------------------------------- */}
-          {/* OVERVIEW */}
-          {/* ---------------------------------------- */}
 
           <Route
             path="/dashboard"
             element={<Dashboard />}
           />
 
-
-          {/* ---------------------------------------- */}
-          {/* MONEY */}
-          {/* ---------------------------------------- */}
-
           <Route
             path="/money"
             element={<Money />}
           />
-
-
-          {/* ---------------------------------------- */}
-          {/* TRANSACTIONS */}
-          {/* ---------------------------------------- */}
 
           <Route
             path="/transactions"
             element={<Transactions />}
           />
 
-
-          {/* ---------------------------------------- */}
-          {/* FINANCIAL HEALTH */}
-          {/* ---------------------------------------- */}
-
           <Route
             path="/health"
             element={<FinancialHealth />}
           />
-
-
-          {/* ---------------------------------------- */}
-          {/* GOALS */}
-          {/* ---------------------------------------- */}
 
           <Route
             path="/goals"
             element={<Goals />}
           />
 
-
-          {/* ---------------------------------------- */}
-          {/* DECISION LAB */}
-          {/* ---------------------------------------- */}
-
           <Route
             path="/decision-lab"
             element={<DecisionLab />}
           />
-
-
-          {/* ---------------------------------------- */}
-          {/* CREDIT READINESS */}
-          {/* ---------------------------------------- */}
 
           <Route
             path="/credit"
             element={<CreditReadiness />}
           />
 
-
-          {/* ---------------------------------------- */}
-          {/* ALTERNATIVES */}
-          {/* ---------------------------------------- */}
-
           <Route
             path="/alternatives"
             element={<Alternatives />}
           />
-
-
-          {/* ---------------------------------------- */}
-          {/* AI COPILOT */}
-          {/* ---------------------------------------- */}
 
           <Route
             path="/ai"
             element={<AICopilot />}
           />
 
-
-          {/* ---------------------------------------- */}
-          {/* CONSENT CENTER */}
-          {/* ---------------------------------------- */}
-
           <Route
             path="/consent"
             element={<Consent />}
           />
 
-
-          {/* ---------------------------------------- */}
-          {/* SETTINGS */}
-          {/* ---------------------------------------- */}
-
           <Route
             path="/settings"
             element={<Settings />}
           />
-
-
-          {/* ---------------------------------------- */}
-          {/* UNKNOWN DASHBOARD ROUTE */}
-          {/* ---------------------------------------- */}
 
           <Route
             path="*"
@@ -166,29 +137,16 @@ function DashboardLayout() {
 }
 
 
-// --------------------------------------------------
-// MAIN APP
-// --------------------------------------------------
-
 function App() {
   return (
     <BrowserRouter>
 
       <Routes>
 
-        {/* ---------------------------------------- */}
-        {/* LANDING PAGE */}
-        {/* ---------------------------------------- */}
-
         <Route
           path="/"
           element={<Landing />}
         />
-
-
-        {/* ---------------------------------------- */}
-        {/* FINOVA APPLICATION */}
-        {/* ---------------------------------------- */}
 
         <Route
           path="/*"
