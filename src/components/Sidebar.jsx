@@ -1,6 +1,7 @@
 import {
   Home,
   Wallet,
+  Receipt,
   HeartPulse,
   Target,
   FlaskConical,
@@ -24,6 +25,11 @@ const mainNavigation = [
     name: "Money",
     icon: Wallet,
     path: "/money",
+  },
+  {
+    name: "Transactions",
+    icon: Receipt,
+    path: "/transactions",
   },
   {
     name: "Financial Health",
@@ -100,7 +106,7 @@ function Sidebar() {
 
       {/* MAIN NAVIGATION */}
 
-      <div className="flex-1">
+      <div className="flex-1 overflow-y-auto">
 
         <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
           Workspace

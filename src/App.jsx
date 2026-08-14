@@ -13,6 +13,7 @@ import Alternatives from "./pages/Alternatives";
 import AICopilot from "./pages/AICopilot";
 import Consent from "./pages/Consent";
 import Settings from "./pages/Settings";
+import Transactions from "./pages/Transactions";
 
 function DashboardLayout() {
   return (
@@ -32,6 +33,11 @@ function DashboardLayout() {
           <Route
             path="/money"
             element={<Money />}
+          />
+
+          <Route
+            path="/transactions"
+            element={<Transactions />}
           />
 
           <Route
@@ -93,11 +99,13 @@ function App() {
 
       <Routes>
 
+        {/* Landing Page */}
         <Route
           path="/"
           element={<Landing />}
         />
 
+        {/* Application */}
         <Route
           path="/*"
           element={<DashboardLayout />}
