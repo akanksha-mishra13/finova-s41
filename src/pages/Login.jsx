@@ -1,232 +1,359 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, ShieldCheck } from "lucide-react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  Globe,
+  Loader2,
+} from "lucide-react";
+
 import { useAuth } from "../context/AuthContext";
+
 
 function Login() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+
+  const {
+    login,
+    loginWithGoogle,
+  } = useAuth();
 
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [password, setPassword] =
+    useState("");
+
+  const [showPassword, setShowPassword] =
+    useState(false);
 
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] =
+    useState(false);
+
+  const [googleLoading, setGoogleLoading] =
+    useState(false);
+
+
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     setError("");
+    setLoading(true);
 
-    if (!email || !password) {
-      setError("Please enter your email and password.");
-      return;
+    try {
+      await login(email, password);
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+
+      if (
+        err.code ===
+        "auth/invalid-credential"
+      ) {
+        setError(
+          "Incorrect email or password."
+        );
+      } else if (
+        err.code ===
+        "auth/user-not-found"
+      ) {
+        setError(
+          "No account found with this email."
+        );
+      } else if (
+        err.code ===
+        "auth/wrong-password"
+      ) {
+        setError(
+          "Incorrect password."
+        );
+      } else {
+        setError(
+          "Unable to login. Please try again."
+        );
+      }
+    } finally {
+      setLoading(false);
     }
-
-    const result = login(email, password);
-
-    if (!result.success) {
-      setError(result.message);
-      return;
-    }
-
-    navigate("/dashboard");
   };
 
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setGoogleLoading(true);
+
+    try {
+      await loginWithGoogle();
+
+      navigate("/dashboard");
+    } catch (err) {
+      console.error(err);
+
+      if (
+        err.code ===
+        "auth/popup-closed-by-user"
+      ) {
+        setError(
+          "Google sign-in was cancelled."
+        );
+      } else {
+        setError(
+          "Google sign-in failed. Please try again."
+        );
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+
   return (
-    <div className="min-h-screen bg-[#F7F9F8]">
+    <main className="flex min-h-screen bg-[#F7F9F8]">
 
-      <div className="grid min-h-screen lg:grid-cols-2">
+      {/* LEFT */}
 
-        {/* LEFT */}
+      <section className="hidden w-1/2 bg-[#123C35] p-12 text-white lg:flex lg:flex-col">
 
-        <div className="hidden bg-[#123C35] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-sm text-white/70 hover:text-white"
+        >
+          <ArrowLeft size={17} />
+          Back to Finova
+        </Link>
 
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              FINOVA
-            </h1>
+        <div className="mx-auto my-auto max-w-lg">
 
-            <p className="mt-1 text-sm text-[#B9E8D0]">
-              Financial intelligence
-            </p>
-          </div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-[#B9E8D0]">
+            FINOVA
+          </p>
 
-          <div className="max-w-lg">
+          <h1 className="mt-5 text-5xl font-bold leading-tight">
+            Your money.
+            <br />
+            Your decisions.
+            <br />
+            Your future.
+          </h1>
 
-            <p className="text-sm font-medium text-[#B9E8D0]">
-              YOUR MONEY. YOUR FUTURE.
-            </p>
-
-            <h2 className="mt-4 text-5xl font-bold leading-tight">
-              Make better financial decisions.
-            </h2>
-
-            <p className="mt-6 text-lg leading-8 text-white/60">
-              Understand your financial health, simulate
-              decisions and build a stronger financial future
-              with Finova.
-            </p>
-
-          </div>
-
-          <p className="text-xs text-white/40">
-            © 2026 Finova
+          <p className="mt-6 text-lg leading-8 text-white/65">
+            Understand your financial health,
+            plan your goals and make smarter
+            financial decisions.
           </p>
 
         </div>
 
+      </section>
 
-        {/* RIGHT */}
 
-        <div className="flex items-center justify-center px-6 py-10">
+      {/* RIGHT */}
 
-          <div className="w-full max-w-md">
+      <section className="flex w-full items-center justify-center px-6 py-10 lg:w-1/2">
 
-            {/* Mobile logo */}
+        <div className="w-full max-w-md">
 
-            <div className="mb-10 lg:hidden">
+          <div className="mb-8">
 
-              <h1 className="text-2xl font-bold text-[#123C35]">
-                FINOVA
-              </h1>
+            <Link
+              to="/"
+              className="text-2xl font-bold text-[#123C35] lg:hidden"
+            >
+              FINOVA
+            </Link>
 
-              <p className="text-xs text-slate-500">
-                Financial intelligence
-              </p>
+            <h2 className="mt-6 text-3xl font-bold text-slate-900">
+              Welcome back
+            </h2>
+
+            <p className="mt-2 text-sm text-slate-500">
+              Sign in to continue to your financial dashboard.
+            </p>
+
+          </div>
+
+
+          {error && (
+            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+
+          {/* GOOGLE */}
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+
+            {googleLoading ? (
+              <Loader2
+                size={19}
+                className="animate-spin"
+              />
+            ) : (
+             <Globe size={19} />
+            )}
+
+            {googleLoading
+              ? "Signing in..."
+              : "Continue with Google"}
+
+          </button>
+
+
+          {/* DIVIDER */}
+
+          <div className="my-6 flex items-center gap-4">
+
+            <div className="h-px flex-1 bg-slate-200" />
+
+            <span className="text-xs text-slate-400">
+              OR
+            </span>
+
+            <div className="h-px flex-1 bg-slate-200" />
+
+          </div>
+
+
+          {/* FORM */}
+
+          <form
+            onSubmit={handleLogin}
+            className="space-y-5"
+          >
+
+            <div>
+
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Email address
+              </label>
+
+              <div className="relative">
+
+                <Mail
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                />
+
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(e.target.value)
+                  }
+                  placeholder="you@example.com"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3.5 pl-10 pr-4 text-sm outline-none focus:border-[#123C35] focus:ring-2 focus:ring-[#B9E8D0]"
+                />
+
+              </div>
 
             </div>
 
 
             <div>
 
-              <p className="text-sm font-medium text-[#123C35]">
-                Welcome back
-              </p>
+              <label className="mb-2 block text-sm font-medium text-slate-700">
+                Password
+              </label>
 
-              <h2 className="mt-2 text-3xl font-bold text-[#0F172A]">
-                Sign in to Finova
-              </h2>
+              <div className="relative">
 
-              <p className="mt-2 text-sm text-slate-500">
-                Continue managing your financial journey.
-              </p>
-
-            </div>
-
-
-            <form
-              onSubmit={handleSubmit}
-              className="mt-8 space-y-5"
-            >
-
-              {/* Email */}
-
-              <div>
-
-                <label className="text-sm font-medium text-slate-700">
-                  Email address
-                </label>
-
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(e.target.value)
-                  }
-                  placeholder="you@example.com"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-[#123C35] focus:ring-2 focus:ring-[#B9E8D0]"
+                <Lock
+                  size={18}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
                 />
 
-              </div>
-
-
-              {/* Password */}
-
-              <div>
-
-                <div className="flex items-center justify-between">
-
-                  <label className="text-sm font-medium text-slate-700">
-                    Password
-                  </label>
-
-                  <button
-                    type="button"
-                    className="text-xs font-medium text-[#123C35]"
-                  >
-                    Forgot password?
-                  </button>
-
-                </div>
-
                 <input
-                  type="password"
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
+                  required
                   value={password}
                   onChange={(e) =>
                     setPassword(e.target.value)
                   }
                   placeholder="Enter your password"
-                  className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm outline-none transition focus:border-[#123C35] focus:ring-2 focus:ring-[#B9E8D0]"
+                  className="w-full rounded-xl border border-slate-200 bg-white py-3.5 pl-10 pr-11 text-sm outline-none focus:border-[#123C35] focus:ring-2 focus:ring-[#B9E8D0]"
                 />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setShowPassword(
+                      !showPassword
+                    )
+                  }
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400"
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} />
+                  ) : (
+                    <Eye size={18} />
+                  )}
+                </button>
 
               </div>
 
-
-              {/* Error */}
-
-              {error && (
-                <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
-                  {error}
-                </div>
-              )}
-
-
-              {/* Submit */}
-
-              <button
-                type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#123C35] px-5 py-4 font-semibold text-white transition hover:bg-[#0F172A] active:scale-[0.99]"
-              >
-                Sign in
-                <ArrowRight size={18} />
-              </button>
-
-            </form>
-
-
-            {/* Signup */}
-
-            <p className="mt-8 text-center text-sm text-slate-500">
-
-              Don't have an account?{" "}
-
-              <Link
-                to="/signup"
-                className="font-semibold text-[#123C35] hover:underline"
-              >
-                Create one
-              </Link>
-
-            </p>
-
-
-            {/* Security */}
-
-            <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-400">
-
-              <ShieldCheck size={14} />
-
-              Your financial information is protected.
-
             </div>
 
-          </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#123C35] px-4 py-3.5 text-sm font-semibold text-white hover:bg-[#0E302B] disabled:opacity-60"
+            >
+
+              {loading && (
+                <Loader2
+                  size={18}
+                  className="animate-spin"
+                />
+              )}
+
+              {loading
+                ? "Signing in..."
+                : "Sign in"}
+
+            </button>
+
+          </form>
+
+
+          <p className="mt-8 text-center text-sm text-slate-500">
+
+            Don't have an account?{" "}
+
+            <Link
+              to="/signup"
+              className="font-semibold text-[#123C35] hover:underline"
+            >
+              Create one
+            </Link>
+
+          </p>
 
         </div>
 
-      </div>
+      </section>
 
-    </div>
+    </main>
   );
 }
 

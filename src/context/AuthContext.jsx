@@ -1,112 +1,103 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updateProfile,
+} from "firebase/auth";
+
+import {
+  auth,
+  googleProvider,
+} from "../config/firebase";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem("finova_user");
-
-    return savedUser
-      ? JSON.parse(savedUser)
-      : null;
-  });
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem(
-        "finova_user",
-        JSON.stringify(user)
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (currentUser) => {
+        setUser(currentUser);
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, []);
+
+  // EMAIL SIGNUP
+  const signup = async (
+    name,
+    email,
+    password
+  ) => {
+    const result =
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
       );
-    } else {
-      localStorage.removeItem("finova_user");
-    }
-  }, [user]);
 
-  const login = (email, password) => {
-    // Temporary frontend authentication.
-    // Backend authentication will replace this later.
-
-    const savedUsers =
-      JSON.parse(
-        localStorage.getItem("finova_users")
-      ) || [];
-
-    const existingUser = savedUsers.find(
-      (item) =>
-        item.email.toLowerCase() === email.toLowerCase() &&
-        item.password === password
-    );
-
-    if (!existingUser) {
-      return {
-        success: false,
-        message: "Invalid email or password.",
-      };
+    if (name) {
+      await updateProfile(result.user, {
+        displayName: name,
+      });
     }
 
-    const loggedInUser = {
-      name: existingUser.name,
-      email: existingUser.email,
-    };
-
-    setUser(loggedInUser);
-
-    return {
-      success: true,
-    };
+    return result.user;
   };
 
-  const signup = (name, email, password) => {
-    const savedUsers =
-      JSON.parse(
-        localStorage.getItem("finova_users")
-      ) || [];
+  // EMAIL LOGIN
+  const login = async (
+    email,
+    password
+  ) => {
+    const result =
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
 
-    const alreadyExists = savedUsers.some(
-      (item) =>
-        item.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (alreadyExists) {
-      return {
-        success: false,
-        message: "An account with this email already exists.",
-      };
-    }
-
-    const newUser = {
-      name,
-      email,
-      password,
-    };
-
-    savedUsers.push(newUser);
-
-    localStorage.setItem(
-      "finova_users",
-      JSON.stringify(savedUsers)
-    );
-
-    setUser({
-      name,
-      email,
-    });
-
-    return {
-      success: true,
-    };
+    return result.user;
   };
 
-  const logout = () => {
-    setUser(null);
+  // GOOGLE LOGIN / SIGNUP
+  const loginWithGoogle = async () => {
+    const result =
+      await signInWithPopup(
+        auth,
+        googleProvider
+      );
+
+    return result.user;
+  };
+
+  // LOGOUT
+  const logout = async () => {
+    await signOut(auth);
   };
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        login,
+        loading,
         signup,
+        login,
+        loginWithGoogle,
         logout,
       }}
     >
