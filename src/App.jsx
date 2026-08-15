@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import {
   BrowserRouter,
   Routes,
@@ -11,6 +12,9 @@ import { Menu } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 
 import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Signup from "./pages/Signup";
+
 import Dashboard from "./pages/Dashboard";
 import Money from "./pages/Money";
 import Transactions from "./pages/Transactions";
@@ -23,9 +27,28 @@ import AICopilot from "./pages/AICopilot";
 import Consent from "./pages/Consent";
 import Settings from "./pages/Settings";
 
+import {
+  AuthProvider,
+  useAuth,
+} from "./context/AuthContext";
+
+
+function ProtectedRoute({ children }) {
+
+  const { user } = useAuth();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
 
 function DashboardLayout() {
-  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const [mobileOpen, setMobileOpen] =
+    useState(false);
 
   return (
     <div className="min-h-screen bg-[#F7F9F8]">
@@ -35,7 +58,8 @@ function DashboardLayout() {
         onClose={() => setMobileOpen(false)}
       />
 
-      {/* Mobile Header */}
+
+      {/* MOBILE HEADER */}
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden">
 
@@ -51,13 +75,13 @@ function DashboardLayout() {
         </div>
 
         <div className="h-8 w-8 rounded-full bg-[#B9E8D0] text-center text-sm font-bold leading-8 text-[#123C35]">
-          AM
+          U
         </div>
 
       </header>
 
 
-      {/* Main Content */}
+      {/* CONTENT */}
 
       <main className="min-h-screen px-4 py-5 sm:px-6 lg:ml-[260px] lg:p-8">
 
@@ -137,23 +161,65 @@ function DashboardLayout() {
 }
 
 
+function AppRoutes() {
+
+  const { user } = useAuth();
+
+  return (
+    <Routes>
+
+      {/* PUBLIC */}
+
+      <Route
+        path="/"
+        element={<Landing />}
+      />
+
+      <Route
+        path="/login"
+        element={
+          user
+            ? <Navigate to="/dashboard" replace />
+            : <Login />
+        }
+      />
+
+      <Route
+        path="/signup"
+        element={
+          user
+            ? <Navigate to="/dashboard" replace />
+            : <Signup />
+        }
+      />
+
+
+      {/* PROTECTED */}
+
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      />
+
+    </Routes>
+  );
+}
+
+
 function App() {
+
   return (
     <BrowserRouter>
 
-      <Routes>
+      <AuthProvider>
 
-        <Route
-          path="/"
-          element={<Landing />}
-        />
+        <AppRoutes />
 
-        <Route
-          path="/*"
-          element={<DashboardLayout />}
-        />
-
-      </Routes>
+      </AuthProvider>
 
     </BrowserRouter>
   );

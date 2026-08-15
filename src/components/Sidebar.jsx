@@ -11,9 +11,11 @@ import {
   Settings,
   ChevronLeft,
   X,
+  LogOut,
 } from "lucide-react";
 
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const mainNavigation = [
   {
@@ -25,11 +27,6 @@ const mainNavigation = [
     name: "Money",
     icon: Wallet,
     path: "/money",
-  },
-  {
-    name: "Transactions",
-    icon: Wallet,
-    path: "/transactions",
   },
   {
     name: "Financial Health",
@@ -76,10 +73,43 @@ const bottomNavigation = [
   },
 ];
 
-function Sidebar({ mobileOpen = false, onClose = () => {} }) {
+function Sidebar({
+  mobileOpen = false,
+  onClose = () => {},
+}) {
+  const { user, logout } = useAuth();
+
+  /*
+    Get initials from user's name.
+
+    Example:
+    Akanksha Mishra → AM
+    Rahul Sharma → RS
+    Priya → P
+  */
+  const getInitials = (name) => {
+    if (!name) return "U";
+
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((word) => word[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
+  const handleLogout = () => {
+    logout();
+    onClose();
+  };
+
   return (
     <>
-      {/* Mobile overlay */}
+      {/* =========================
+          MOBILE OVERLAY
+      ========================== */}
+
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/40 lg:hidden"
@@ -87,18 +117,35 @@ function Sidebar({ mobileOpen = false, onClose = () => {} }) {
         />
       )}
 
+      {/* =========================
+          SIDEBAR
+      ========================== */}
+
       <aside
         className={`
-          fixed left-0 top-0 z-50 flex h-screen w-[260px]
-          flex-col bg-[#123C35] px-4 py-6 text-white
+          fixed left-0 top-0 z-50
+          flex h-screen w-[260px]
+          flex-col
+          bg-[#123C35]
+          px-4 py-6
+          text-white
           transition-transform duration-300
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
           lg:translate-x-0
+
+          ${
+            mobileOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
         `}
       >
-        {/* LOGO */}
+
+        {/* =========================
+            LOGO
+        ========================== */}
 
         <div className="mb-8 flex items-center justify-between px-3">
+
           <div>
             <h1 className="text-2xl font-bold tracking-tight">
               FINOVA
@@ -109,13 +156,7 @@ function Sidebar({ mobileOpen = false, onClose = () => {} }) {
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-white lg:hidden"
-          >
-            <X size={18} />
-          </button>
+          {/* Desktop collapse button */}
 
           <button
             type="button"
@@ -123,17 +164,34 @@ function Sidebar({ mobileOpen = false, onClose = () => {} }) {
           >
             <ChevronLeft size={18} />
           </button>
+
+          {/* Mobile close button */}
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-white/60 transition hover:bg-white/10 hover:text-white lg:hidden"
+          >
+            <X size={20} />
+          </button>
+
         </div>
 
-        {/* MAIN NAVIGATION */}
+
+        {/* =========================
+            MAIN NAVIGATION
+        ========================== */}
 
         <div className="flex-1 overflow-y-auto">
+
           <p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.15em] text-white/40">
             Workspace
           </p>
 
           <nav className="space-y-1">
+
             {mainNavigation.map((item) => {
+
               const Icon = item.icon;
 
               return (
@@ -142,27 +200,48 @@ function Sidebar({ mobileOpen = false, onClose = () => {} }) {
                   to={item.path}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
+                    `
+                    group flex w-full items-center
+                    gap-3 rounded-xl px-3 py-3
+                    text-sm transition
+
+                    ${
                       isActive
                         ? "bg-[#B9E8D0] font-semibold text-[#123C35]"
                         : "text-white/70 hover:bg-white/10 hover:text-white"
-                    }`
+                    }
+                    `
                   }
                 >
-                  <Icon size={19} strokeWidth={1.8} />
 
-                  <span>{item.name}</span>
+                  <Icon
+                    size={19}
+                    strokeWidth={1.8}
+                  />
+
+                  <span>
+                    {item.name}
+                  </span>
+
                 </NavLink>
               );
             })}
+
           </nav>
+
         </div>
 
-        {/* BOTTOM */}
+
+        {/* =========================
+            BOTTOM NAVIGATION
+        ========================== */}
 
         <div className="border-t border-white/10 pt-4">
+
           <nav className="space-y-1">
+
             {bottomNavigation.map((item) => {
+
               const Icon = item.icon;
 
               return (
@@ -171,39 +250,88 @@ function Sidebar({ mobileOpen = false, onClose = () => {} }) {
                   to={item.path}
                   onClick={onClose}
                   className={({ isActive }) =>
-                    `flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition ${
+                    `
+                    flex w-full items-center
+                    gap-3 rounded-xl px-3 py-3
+                    text-sm transition
+
+                    ${
                       isActive
                         ? "bg-white/10 text-white"
                         : "text-white/60 hover:bg-white/10 hover:text-white"
-                    }`
+                    }
+                    `
                   }
                 >
-                  <Icon size={19} strokeWidth={1.8} />
 
-                  <span>{item.name}</span>
+                  <Icon
+                    size={19}
+                    strokeWidth={1.8}
+                  />
+
+                  <span>
+                    {item.name}
+                  </span>
+
                 </NavLink>
               );
             })}
+
           </nav>
 
-          {/* USER */}
 
-          <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/5 p-3">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B9E8D0] text-sm font-bold text-[#123C35]">
-              AM
+          {/* =========================
+              USER PROFILE
+          ========================== */}
+
+          <div className="mt-5 rounded-xl bg-white/5 p-3">
+
+            <div className="flex items-center gap-3">
+
+              {/* Avatar */}
+
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#B9E8D0] text-sm font-bold text-[#123C35]">
+                {getInitials(user?.name)}
+              </div>
+
+
+              {/* User information */}
+
+              <div className="min-w-0 flex-1">
+
+                <p className="truncate text-sm font-medium">
+                  {user?.name || "User"}
+                </p>
+
+                <p className="truncate text-xs text-white/40">
+                  {user?.email || "Personal account"}
+                </p>
+
+              </div>
+
             </div>
 
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">
-                Akanksha
-              </p>
 
-              <p className="truncate text-xs text-white/40">
-                Personal account
-              </p>
-            </div>
+            {/* Logout */}
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-3 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-medium text-white/50 transition hover:bg-white/10 hover:text-white"
+            >
+
+              <LogOut size={15} />
+
+              <span>
+                Sign out
+              </span>
+
+            </button>
+
           </div>
+
         </div>
+
       </aside>
     </>
   );

@@ -692,4 +692,122 @@ export default function FinancialHealth() {
 
     </div>
   );
-}
+}{/* ACTION PLAN */}
+
+<section className="mt-8">
+
+  <div className="mb-4">
+    <p className="text-sm font-medium text-[#123C35]">
+      Your next best actions
+    </p>
+
+    <h2 className="mt-1 text-2xl font-bold text-[#0F172A]">
+      Improve your financial health
+    </h2>
+
+    <p className="mt-1 text-sm text-slate-500">
+      Finova identifies the areas where a small action can make the biggest difference.
+    </p>
+  </div>
+
+
+  <div className="grid gap-4 md:grid-cols-3">
+
+    {/* Emergency Fund */}
+
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+      <div className="mb-4 flex items-center justify-between">
+
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-xl">
+          🛡️
+        </div>
+
+        <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+          Priority
+        </span>
+
+      </div>
+
+      <h3 className="font-semibold text-[#0F172A]">
+        Strengthen emergency fund
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Your emergency fund score is 68. Building another ₹18,000
+        could significantly improve your financial safety.
+      </p>
+
+      <button className="mt-4 text-sm font-semibold text-[#123C35] underline underline-offset-4">
+        Improve this →
+      </button>
+
+    </div>
+
+
+    {/* Spending */}
+
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+      <div className="mb-4 flex items-center justify-between">
+
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-xl">
+          📊
+        </div>
+
+        <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+          Healthy
+        </span>
+
+      </div>
+
+      <h3 className="font-semibold text-[#0F172A]">
+        Maintain spending discipline
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Your spending health is strong. Keeping discretionary
+        spending below ₹7,000 this month will maintain your progress.
+      </p>
+
+      <button className="mt-4 text-sm font-semibold text-[#123C35] underline underline-offset-4">
+        View spending →
+      </button>
+
+    </div>
+
+
+    {/* Goals */}
+
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+
+      <div className="mb-4 flex items-center justify-between">
+
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-xl">
+          🎯
+        </div>
+
+        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+          Opportunity
+        </span>
+
+      </div>
+
+      <h3 className="font-semibold text-[#0F172A]">
+        Accelerate your goals
+      </h3>
+
+      <p className="mt-2 text-sm leading-6 text-slate-500">
+        Redirecting ₹2,000 from discretionary spending could
+        help you reach your current goal earlier.
+      </p>
+
+      <button className="mt-4 text-sm font-semibold text-[#123C35] underline underline-offset-4">
+        View goals →
+      </button>
+
+    </div>
+
+  </div>
+
+</section>
