@@ -1,206 +1,473 @@
-import { useState } from "react";
 import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  ArrowUp,
   Bot,
-  Send,
   Sparkles,
-  ShieldCheck,
+  User,
+  RotateCcw,
 } from "lucide-react";
 
-const suggestions = [
-  "How can I improve my financial health?",
-  "Should I buy a laptop this month?",
-  "How can I build my emergency fund?",
-  "Where am I spending too much?",
-];
+import {
+  createFinovaChat,
+  askFinova,
+} from "../services/gemini";
+
 
 function AICopilot() {
 
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
+  const chatRef = useRef(null);
 
-  const getResponse = (text) => {
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      text:
+        "Hi! I'm Finova AI. Ask me anything about budgeting, saving, financial health, credit, goals, or everyday financial decisions.",
+    },
+  ]);
 
-    const lower = text.toLowerCase();
+  const [input, setInput] =
+    useState("");
 
-    if (lower.includes("laptop") || lower.includes("buy")) {
-      return "Based on your current financial health score of 82, the purchase looks manageable if your monthly payment stays below approximately ₹5,000. I would recommend simulating the decision first so we can compare its impact on your emergency fund and goals.";
+  const [loading, setLoading] =
+    useState(false);
+
+
+  // ============================================
+  // CREATE CHAT SESSION
+  // ============================================
+
+  useEffect(() => {
+
+    try {
+
+      chatRef.current =
+        createFinovaChat();
+
+      console.log(
+        "Finova AI chat initialized."
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Failed to initialize Finova AI:",
+        error
+      );
+
     }
+
+  }, []);
+
+
+  // ============================================
+  // SEND MESSAGE
+  // ============================================
+
+  const handleSend = async () => {
+
+    const question =
+      input.trim();
+
 
     if (
-      lower.includes("emergency") ||
-      lower.includes("fund")
+      !question ||
+      loading
     ) {
-      return "Your emergency fund is currently the biggest opportunity in your financial profile. Consider building another ₹18,000 gradually. A consistent monthly contribution can strengthen this score without putting pressure on your spending.";
+      return;
     }
 
-    if (
-      lower.includes("spend") ||
-      lower.includes("expense")
-    ) {
-      return "Your spending health is currently strong. The main opportunity is to monitor discretionary categories and keep them within your monthly limits.";
-    }
 
-    return "Based on your current Finova profile, your financial health score is 82/100. Your strongest area is savings, while your emergency fund has the most room for improvement.";
-  };
+    // ------------------------------------------
+    // SHOW USER MESSAGE
+    // ------------------------------------------
 
+    setMessages((previous) => [
+      ...previous,
 
-  const sendMessage = (text = message) => {
-
-    if (!text.trim()) return;
-
-    const reply = getResponse(text);
-
-    setMessages((prev) => [
-      ...prev,
       {
-        type: "user",
-        text,
-      },
-      {
-        type: "ai",
-        text: reply,
+        role: "user",
+        text: question,
       },
     ]);
 
-    setMessage("");
+
+    setInput("");
+
+    setLoading(true);
+
+
+    try {
+
+      // ----------------------------------------
+      // MAKE SURE CHAT EXISTS
+      // ----------------------------------------
+
+      if (!chatRef.current) {
+
+        chatRef.current =
+          createFinovaChat();
+
+      }
+
+
+      // ----------------------------------------
+      // ASK GEMINI
+      // ----------------------------------------
+
+      const answer =
+        await askFinova(
+          chatRef.current,
+          question
+        );
+
+
+      // ----------------------------------------
+      // SHOW AI RESPONSE
+      // ----------------------------------------
+
+      setMessages((previous) => [
+        ...previous,
+
+        {
+          role: "assistant",
+          text: answer,
+        },
+      ]);
+
+    } catch (error) {
+
+      console.error(
+        "Gemini error:",
+        error
+      );
+
+
+      let errorMessage =
+        "Something went wrong while contacting Finova AI. Please try again.";
+
+
+      // ----------------------------------------
+      // FRIENDLY ERROR MESSAGES
+      // ----------------------------------------
+
+      if (
+        error?.message?.includes(
+          "api-not-enabled"
+        )
+      ) {
+
+        errorMessage =
+          "Finova AI is not fully enabled in the Firebase project yet. Please check Firebase AI Logic configuration.";
+
+      }
+
+
+      if (
+        error?.message?.includes(
+          "permission"
+        )
+      ) {
+
+        errorMessage =
+          "Finova AI does not currently have permission to access the Gemini API. Please check your Firebase configuration.";
+
+      }
+
+
+      if (
+        error?.message?.includes(
+          "quota"
+        )
+      ) {
+
+        errorMessage =
+          "Finova AI has temporarily reached its usage limit. Please try again later.";
+
+      }
+
+
+      setMessages((previous) => [
+        ...previous,
+
+        {
+          role: "assistant",
+          text: errorMessage,
+          error: true,
+        },
+      ]);
+
+    } finally {
+
+      setLoading(false);
+
+    }
+
   };
 
 
+  // ============================================
+  // ENTER KEY
+  // ============================================
+
+  const handleKeyDown =
+    (event) => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        handleSend();
+
+      }
+
+    };
+
+
+  // ============================================
+  // RESET CHAT
+  // ============================================
+
+  const resetChat = () => {
+
+    chatRef.current =
+      createFinovaChat();
+
+
+    setMessages([
+      {
+        role: "assistant",
+        text:
+          "Hi! I'm Finova AI. Ask me anything about budgeting, saving, financial health, credit, goals, or everyday financial decisions.",
+      },
+    ]);
+
+  };
+
+
+  // ============================================
+  // UI
+  // ============================================
+
   return (
-    <div className="mx-auto max-w-5xl">
 
-      {/* Header */}
-
-      <div className="mb-8">
-
-        <div className="flex items-center gap-3">
-
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#123C35] text-[#B9E8D0]">
-            <Bot size={24} />
-          </div>
-
-          <div>
-
-            <p className="text-sm font-medium text-[#123C35]">
-              Your personal financial assistant
-            </p>
-
-            <h1 className="text-3xl font-bold text-[#0F172A]">
-              AI Copilot
-            </h1>
-
-          </div>
-
-        </div>
-
-        <p className="mt-3 max-w-2xl text-slate-500">
-          Ask questions about your spending, goals and financial
-          decisions. Finova uses your financial profile to provide
-          personalized guidance.
-        </p>
-
-      </div>
+    <div className="min-h-screen">
 
 
-      {/* Insight */}
+      {/* ======================================
+          HEADER
+      ======================================= */}
 
-      <div className="mb-5 rounded-2xl border border-[#CFEFE0] bg-[#F0FAF5] p-5">
+      <div className="flex items-center justify-between">
 
-        <div className="flex items-start gap-3">
+        <div>
 
-          <Sparkles
-            className="mt-1 text-[#123C35]"
-            size={20}
-          />
+          <div className="flex items-center gap-2">
 
-          <div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#123C35] text-white">
 
-            <h3 className="font-semibold text-[#123C35]">
-              Today's insight
-            </h3>
-
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Your financial health is strong at 82/100.
-              Your biggest opportunity is improving your emergency fund.
-            </p>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      {/* Chat */}
-
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-        <div className="min-h-[430px] p-5">
-
-          {messages.length === 0 ? (
-
-            <div className="flex min-h-[390px] flex-col items-center justify-center text-center">
-
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#E7F7F0] text-[#123C35]">
-                <Bot size={30} />
-              </div>
-
-              <h2 className="mt-5 text-xl font-bold text-[#0F172A]">
-                How can I help?
-              </h2>
-
-              <p className="mt-2 max-w-md text-sm text-slate-500">
-                Ask me about your financial health, spending,
-                goals or an upcoming financial decision.
-              </p>
-
-
-              <div className="mt-6 grid w-full max-w-xl gap-2 sm:grid-cols-2">
-
-                {suggestions.map((item) => (
-
-                  <button
-                    key={item}
-                    onClick={() => sendMessage(item)}
-                    className="rounded-xl border border-slate-200 p-3 text-left text-sm text-slate-600 transition hover:border-[#B9E8D0] hover:bg-[#F7F9F8]"
-                  >
-                    {item}
-                  </button>
-
-                ))}
-
-              </div>
+              <Sparkles size={19} />
 
             </div>
 
-          ) : (
 
-            <div className="space-y-5">
+            <div>
 
-              {messages.map((item, index) => (
+              <h1 className="text-2xl font-bold text-[#123C35]">
+                AI Copilot
+              </h1>
+
+              <p className="text-sm text-slate-500">
+                Your personal financial intelligence assistant
+              </p>
+
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <button
+          type="button"
+          onClick={resetChat}
+          className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+        >
+
+          <RotateCcw size={16} />
+
+          New chat
+
+        </button>
+
+      </div>
+
+
+      {/* ======================================
+          CHAT CONTAINER
+      ======================================= */}
+
+      <div className="mt-6 overflow-hidden rounded-3xl border border-[#DCE5E1] bg-white shadow-sm">
+
+
+        {/* AI STATUS */}
+
+        <div className="flex items-center gap-3 border-b border-slate-100 px-6 py-4">
+
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#EAF4EF]">
+
+            <Bot
+              size={18}
+              className="text-[#123C35]"
+            />
+
+          </div>
+
+
+          <div>
+
+            <p className="text-sm font-semibold text-[#123C35]">
+              Finova AI
+            </p>
+
+            <p className="text-xs text-slate-500">
+              Gemini-powered financial assistant
+            </p>
+
+          </div>
+
+
+          <div className="ml-auto flex items-center gap-2">
+
+            <span className="h-2 w-2 rounded-full bg-green-500" />
+
+            <span className="text-xs text-slate-500">
+              Online
+            </span>
+
+          </div>
+
+        </div>
+
+
+        {/* ====================================
+            MESSAGES
+        ===================================== */}
+
+        <div className="h-[520px] overflow-y-auto bg-[#F8FAF9] p-6">
+
+          {messages.map(
+            (message, index) => (
+
+              <div
+                key={index}
+                className={`mb-5 flex ${
+                  message.role === "user"
+                    ? "justify-end"
+                    : "justify-start"
+                }`}
+              >
 
                 <div
-                  key={index}
-                  className={`flex ${
-                    item.type === "user"
-                      ? "justify-end"
-                      : "justify-start"
+                  className={`flex max-w-[80%] gap-3 ${
+                    message.role === "user"
+                      ? "flex-row-reverse"
+                      : ""
                   }`}
                 >
 
+                  {/* AVATAR */}
+
                   <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-6 ${
-                      item.type === "user"
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                      message.role === "user"
                         ? "bg-[#123C35] text-white"
-                        : "bg-slate-100 text-slate-700"
+                        : "bg-[#DDEDE5] text-[#123C35]"
                     }`}
                   >
-                    {item.text}
+
+                    {message.role === "user" ? (
+                      <User size={17} />
+                    ) : (
+                      <Bot size={17} />
+                    )}
+
+                  </div>
+
+
+                  {/* MESSAGE */}
+
+                  <div
+                    className={`rounded-2xl px-4 py-3 ${
+                      message.role === "user"
+                        ? "rounded-tr-sm bg-[#123C35] text-white"
+                        : "rounded-tl-sm border border-slate-200 bg-white text-slate-700"
+                    }`}
+                  >
+
+                    <p className="whitespace-pre-wrap text-sm leading-6">
+                      {message.text}
+                    </p>
+
                   </div>
 
                 </div>
 
-              ))}
+              </div>
+
+            )
+          )}
+
+
+          {/* LOADING */}
+
+          {loading && (
+
+            <div className="mb-5 flex justify-start">
+
+              <div className="flex gap-3">
+
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#DDEDE5]">
+
+                  <Bot size={17} />
+
+                </div>
+
+
+                <div className="rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-5 py-4">
+
+                  <div className="flex gap-1">
+
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+
+                    <span
+                      className="h-2 w-2 animate-bounce rounded-full bg-slate-400"
+                      style={{
+                        animationDelay:
+                          "150ms",
+                      }}
+                    />
+
+                    <span
+                      className="h-2 w-2 animate-bounce rounded-full bg-slate-400"
+                      style={{
+                        animationDelay:
+                          "300ms",
+                      }}
+                    />
+
+                  </div>
+
+                </div>
+
+              </div>
 
             </div>
 
@@ -209,40 +476,94 @@ function AICopilot() {
         </div>
 
 
-        {/* Input */}
+        {/* ====================================
+            INPUT
+        ===================================== */}
 
-        <div className="border-t border-slate-200 p-4">
+        <div className="border-t border-slate-100 bg-white p-4">
 
-          <div className="flex gap-2">
+          <div className="flex items-end gap-3 rounded-2xl border border-slate-200 bg-[#F8FAF9] p-2">
 
-            <input
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  sendMessage();
-                }
-              }}
+            <textarea
+              value={input}
+              onChange={(event) =>
+                setInput(event.target.value)
+              }
+              onKeyDown={handleKeyDown}
+              disabled={loading}
+              rows={1}
               placeholder="Ask Finova anything..."
-              className="min-w-0 flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-[#123C35]"
+              className="max-h-32 min-h-[44px] flex-1 resize-none border-0 bg-transparent px-3 py-2.5 text-sm text-slate-700 outline-none placeholder:text-slate-400"
             />
 
+
             <button
-              onClick={() => sendMessage()}
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#123C35] text-white transition hover:bg-[#0F172A]"
+              type="button"
+              onClick={handleSend}
+              disabled={
+                loading ||
+                !input.trim()
+              }
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#123C35] text-white transition hover:bg-[#0E302B] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Send size={18} />
+
+              <ArrowUp size={19} />
+
             </button>
 
           </div>
 
-          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
 
-            <ShieldCheck size={13} />
+          <p className="mt-3 text-center text-xs text-slate-400">
 
-            Your financial information stays protected.
+            Finova AI can make mistakes.
+            Verify important financial information.
 
-          </div>
+          </p>
+
+        </div>
+
+      </div>
+
+
+      {/* ======================================
+          SUGGESTIONS
+      ======================================= */}
+
+      <div className="mt-5">
+
+        <p className="mb-3 text-sm font-semibold text-[#123C35]">
+          Try asking
+        </p>
+
+
+        <div className="flex flex-wrap gap-2">
+
+          {[
+            "How can I save more money?",
+            "How much should I keep as an emergency fund?",
+            "How can I improve my credit score?",
+            "Help me create a monthly budget",
+            "What is compound interest?",
+            "Should I pay off my debt first?",
+          ].map(
+            (question) => (
+
+              <button
+                key={question}
+                type="button"
+                onClick={() =>
+                  setInput(question)
+                }
+                className="rounded-xl border border-[#DCE5E1] bg-white px-4 py-2.5 text-sm text-slate-600 transition hover:border-[#123C35] hover:text-[#123C35]"
+              >
+
+                {question}
+
+              </button>
+
+            )
+          )}
 
         </div>
 
@@ -251,5 +572,6 @@ function AICopilot() {
     </div>
   );
 }
+
 
 export default AICopilot;
