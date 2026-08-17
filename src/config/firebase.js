@@ -1,17 +1,34 @@
-// src/config/firebase.js
+// ============================================
+// FIREBASE
+// ============================================
 
 import { initializeApp } from "firebase/app";
+
+
+// ============================================
+// FIREBASE AUTH
+// ============================================
 
 import {
   getAuth,
   GoogleAuthProvider,
 } from "firebase/auth";
 
+
+// ============================================
+// FIREBASE AI
+// ============================================
+
 import {
   getAI,
   getGenerativeModel,
   GoogleAIBackend,
 } from "firebase/ai";
+
+
+// ============================================
+// FIREBASE APP CHECK
+// ============================================
 
 import {
   initializeAppCheck,
@@ -29,7 +46,10 @@ const firebaseConfig = {
   projectId: "finova-s41",
   storageBucket: "finova-s41.firebasestorage.app",
   messagingSenderId: "497415157596",
-  appId: "1:497415157596:web:0261de1c080c63f3ea7399",
+
+  // IMPORTANT:
+  // This is the Finova S41 Web App ID
+  appId: "1:497415157596:web:1d249f0ddf2136deea7399",
 };
 
 
@@ -41,7 +61,7 @@ const app = initializeApp(firebaseConfig);
 
 
 // ============================================
-// FIREBASE AUTHENTICATION
+// FIREBASE AUTH
 // ============================================
 
 export const auth = getAuth(app);
@@ -51,24 +71,26 @@ export const googleProvider =
 
 
 // ============================================
-// FIREBASE APP CHECK
+// APP CHECK - DEVELOPMENT
 // ============================================
 
-const RECAPTCHA_SITE_KEY =
-  "6Lf7NYktAAAAANPheOuemRPXBHAEsfT3zg4Je1it";
+// Allows Firebase to generate a debug token
+// when running the application locally.
+
+self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 
 
-// Only initialize reCAPTCHA App Check
-// when running on the deployed application.
+// IMPORTANT:
+// Use the reCAPTCHA Enterprise site key
+// registered for the Finova S41 Firebase app.
 
-if (window.location.hostname !== "localhost") {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaEnterpriseProvider(
-      RECAPTCHA_SITE_KEY
-    ),
-    isTokenAutoRefreshEnabled: true,
-  });
-}
+export const appCheck = initializeAppCheck(app, {
+  provider: new ReCaptchaEnterpriseProvider(
+    "6Lf7NYktAAAAANPheOuemRPXBHAEsfT3zg4Je1it"
+  ),
+
+  isTokenAutoRefreshEnabled: true,
+});
 
 
 // ============================================
@@ -86,12 +108,13 @@ const ai = getAI(app, {
 
 export const geminiModel =
   getGenerativeModel(ai, {
-    model: "gemini-2.5-flash",
+    model: "gemini-3.6-flash",
   });
 
 
 // ============================================
-// EXPORT FIREBASE APP
+// DEFAULT EXPORT
 // ============================================
 
 export default app;
+
