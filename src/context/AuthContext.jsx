@@ -6,8 +6,10 @@ import {
 } from "react";
 
 import {
+  browserLocalPersistence,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
@@ -21,23 +23,49 @@ import {
 
 const AuthContext = createContext(null);
 
+let googleLoginInProgress = false;
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (currentUser) => {
-        setUser(currentUser);
+    let unsubscribe;
+
+    const initializeAuth = async () => {
+      try {
+        await setPersistence(
+          auth,
+          browserLocalPersistence
+        );
+
+        unsubscribe = onAuthStateChanged(
+          auth,
+          (currentUser) => {
+            setUser(currentUser);
+            setLoading(false);
+          }
+        );
+
+      } catch (error) {
+        console.error(
+          "AUTH INITIALIZATION ERROR:",
+          error
+        );
+
         setLoading(false);
       }
-    );
+    };
 
-    return unsubscribe;
+    initializeAuth();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
-  // EMAIL SIGNUP
   const signup = async (
     name,
     email,
@@ -59,7 +87,6 @@ export function AuthProvider({ children }) {
     return result.user;
   };
 
-  // EMAIL LOGIN
   const login = async (
     email,
     password
@@ -74,18 +101,34 @@ export function AuthProvider({ children }) {
     return result.user;
   };
 
-  // GOOGLE LOGIN / SIGNUP
   const loginWithGoogle = async () => {
-    const result =
-      await signInWithPopup(
+    if (googleLoginInProgress) {
+      throw new Error(
+        "Google sign-in is already in progress."
+      );
+    }
+
+    googleLoginInProgress = true;
+
+    try {
+      await setPersistence(
         auth,
-        googleProvider
+        browserLocalPersistence
       );
 
-    return result.user;
+      const result =
+        await signInWithPopup(
+          auth,
+          googleProvider
+        );
+
+      return result.user;
+
+    } finally {
+      googleLoginInProgress = false;
+    }
   };
 
-  // LOGOUT
   const logout = async () => {
     await signOut(auth);
   };
@@ -109,3 +152,4 @@ export function AuthProvider({ children }) {
 export function useAuth() {
   return useContext(AuthContext);
 }
+
