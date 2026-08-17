@@ -69,9 +69,9 @@ export const auth = getAuth(app);
 export const googleProvider =
   new GoogleAuthProvider();
 
-
+ 
 // ============================================
-// FIREBASE APP CHECK
+// APP CHECK
 // ============================================
 
 const isDevelopment =
@@ -79,16 +79,13 @@ const isDevelopment =
   window.location.hostname === "127.0.0.1";
 
 
-// Only enable the debug token locally.
-// NEVER use the debug provider/token in production.
-
+// Debug App Check ONLY on localhost
 if (isDevelopment) {
   self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
 }
 
 
-// Initialize App Check
-
+// Real reCAPTCHA Enterprise for production
 export const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaEnterpriseProvider(
     "6Lf7NYktAAAAANPheOuemRPXBHAEsfT3zg4Je1it"
@@ -96,6 +93,7 @@ export const appCheck = initializeAppCheck(app, {
 
   isTokenAutoRefreshEnabled: true,
 });
+
 
 
 
