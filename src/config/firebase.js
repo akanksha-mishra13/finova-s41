@@ -71,18 +71,23 @@ export const googleProvider =
 
 
 // ============================================
-// APP CHECK - DEVELOPMENT
+// FIREBASE APP CHECK
 // ============================================
 
-// Allows Firebase to generate a debug token
-// when running the application locally.
+const isDevelopment =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
 
-self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+
+// Only enable the debug token locally.
+// NEVER use the debug provider/token in production.
+
+if (isDevelopment) {
+  self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+}
 
 
-// IMPORTANT:
-// Use the reCAPTCHA Enterprise site key
-// registered for the Finova S41 Firebase app.
+// Initialize App Check
 
 export const appCheck = initializeAppCheck(app, {
   provider: new ReCaptchaEnterpriseProvider(
@@ -91,6 +96,7 @@ export const appCheck = initializeAppCheck(app, {
 
   isTokenAutoRefreshEnabled: true,
 });
+
 
 
 // ============================================
