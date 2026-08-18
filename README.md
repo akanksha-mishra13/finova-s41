@@ -862,7 +862,7 @@ Finova's vision is to make financial decision-making:
 
 Built with ❤️ by our team for:
 
-** Team Members:**
+Team Members:
 
 1.AKANKSHA MISHRA
 
