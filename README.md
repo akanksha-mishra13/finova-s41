@@ -861,6 +861,13 @@ Finova's vision is to make financial decision-making:
 # 👥 Team
 
 Built with ❤️ by our team for:
+** Team Members:**
+1.AKANKSHA MISHRA
+2.ADTIYA MISHRA
+3.ARYAV KUMAR
+4.ASHISH SWAIN
+5.SHREYANSH SHASHANK
+6.SWASTIK KUMAR
 
 ## 🇮🇳 Smart India Hackathon
 
