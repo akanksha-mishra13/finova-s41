@@ -16,7 +16,36 @@ import {
   Wallet,
 } from "lucide-react";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+
+const TRANSACTIONS_STORAGE_KEY = "finova_transactions";
+const GOALS_STORAGE_KEY = "finova_goals";
+
+function readStoredArray(key) {
+  try {
+    const saved = localStorage.getItem(key);
+    const parsed = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function formatCurrency(amount) {
+  return `₹${Number(amount || 0).toLocaleString("en-IN")}`;
+}
+
+function clampScore(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function statusForScore(score) {
+  if (score >= 85) return "Excellent";
+  if (score >= 70) return "Healthy";
+  if (score >= 50) return "Needs attention";
+  return "Needs improvement";
+}
 
 function ScoreRing({ score }) {
   const radius = 55;
@@ -221,6 +250,200 @@ export default function CreditReadiness() {
     ]
   );
 
+  const [transactions, setTransactions] = useState(() =>
+    readStoredArray(TRANSACTIONS_STORAGE_KEY)
+  );
+
+  const [goals, setGoals] = useState(() =>
+    readStoredArray(GOALS_STORAGE_KEY)
+  );
+
+  useEffect(() => {
+    const refreshData = () => {
+      setTransactions(readStoredArray(TRANSACTIONS_STORAGE_KEY));
+      setGoals(readStoredArray(GOALS_STORAGE_KEY));
+    };
+
+    refreshData();
+    window.addEventListener("storage", refreshData);
+    window.addEventListener("focus", refreshData);
+
+    return () => {
+      window.removeEventListener("storage", refreshData);
+      window.removeEventListener("focus", refreshData);
+    };
+  }, []);
+
+  const creditData = useMemo(() => {
+    const income = transactions
+      .filter((item) => item.type === "Income")
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    const expenses = transactions
+      .filter((item) => item.type === "Expense")
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    const debtPayments = transactions
+      .filter(
+        (item) =>
+          item.type === "Expense" &&
+          String(item.category || "").trim().toLowerCase() ===
+            "debt / loan"
+      )
+      .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+    const debtRatio =
+      income > 0 ? (debtPayments / income) * 100 : 0;
+
+    const debtScore =
+      income > 0
+        ? clampScore(100 - debtRatio * 2)
+        : 50;
+
+    const emergencyGoal =
+      goals.find(
+        (goal) =>
+          String(goal.name || "").trim().toLowerCase() ===
+          "emergency fund"
+      ) || null;
+
+    const emergencySaved = Number(emergencyGoal?.current || 0);
+
+    const emergencyMonths =
+      expenses > 0 ? emergencySaved / expenses : 0;
+
+    const savingsBufferScore = clampScore(
+      (emergencyMonths / 3) * 100
+    );
+
+    const savings = Math.max(0, income - expenses);
+
+    const savingsRate =
+      income > 0 ? (savings / income) * 100 : 0;
+
+    const savingsStrengthScore = clampScore(
+      savingsRate * 1.5
+    );
+
+    const goalProgress =
+      goals.length > 0
+        ? goals.reduce(
+            (sum, goal) => sum + Number(goal.progress || 0),
+            0
+          ) / goals.length
+        : 0;
+
+    // We do not have a credit-limit field in the current transaction model.
+    // Keep this neutral instead of inventing utilization data.
+    const utilizationScore = 70;
+
+    // A transaction-only app cannot prove an official credit-report
+    // repayment history. Use the presence/consistency of recorded Debt/Loan
+    // payments as an educational proxy, never as a real credit score.
+    const debtTransactions = transactions.filter(
+      (item) =>
+        item.type === "Expense" &&
+        String(item.category || "").trim().toLowerCase() ===
+          "debt / loan"
+    );
+
+    const paymentBehaviorScore =
+      debtTransactions.length === 0
+        ? 70
+        : clampScore(
+            Math.min(100, 70 + debtTransactions.length * 5)
+          );
+
+    const financialHealthScore = clampScore(
+      savingsStrengthScore * 0.25 +
+      Math.max(0, 100 - (expenses > 0 && income > 0 ? (expenses / income) * 100 : 50)) * 0.2 +
+      savingsBufferScore * 0.2 +
+      debtScore * 0.15 +
+      goalProgress * 0.2
+    );
+
+    const readinessScore = clampScore(
+      paymentBehaviorScore * 0.25 +
+      utilizationScore * 0.15 +
+      debtScore * 0.25 +
+      savingsBufferScore * 0.2 +
+      financialHealthScore * 0.15
+    );
+
+    const factors = {
+      paymentBehavior: paymentBehaviorScore,
+      utilization: utilizationScore,
+      debt: debtScore,
+      savingsBuffer: savingsBufferScore,
+    };
+
+    const weakest = Object.entries(factors).sort(
+      (a, b) => a[1] - b[1]
+    )[0];
+
+    return {
+      income,
+      expenses,
+      debtPayments,
+      debtRatio,
+      debtScore,
+      emergencySaved,
+      emergencyMonths,
+      savingsBufferScore,
+      savingsRate,
+      goalProgress,
+      financialHealthScore,
+      readinessScore,
+      factors,
+      weakest: weakest?.[0] || "savingsBuffer",
+    };
+  }, [transactions, goals]);
+
+  const readinessLabel =
+    creditData.readinessScore >= 85
+      ? "Strong readiness"
+      : creditData.readinessScore >= 70
+        ? "{readinessLabel}"
+        : creditData.readinessScore >= 50
+          ? "Moderate readiness"
+          : "Needs improvement";
+
+  const readinessHeadline =
+    creditData.readinessScore >= 85
+      ? "You're in a strong position for responsible borrowing."
+      : creditData.readinessScore >= 70
+        ? "{readinessHeadline}"
+        : "There are a few areas to strengthen before borrowing.";
+
+  const debtBurdenLabel =
+    creditData.income <= 0
+      ? "No income data"
+      : creditData.debtRatio <= 10
+        ? "Low"
+        : creditData.debtRatio <= 20
+          ? "Moderate"
+          : "High";
+
+  const safetyBufferLabel =
+    creditData.emergencyMonths >= 3
+      ? "Strong"
+      : creditData.emergencyMonths >= 1
+        ? "Moderate"
+        : "Low";
+
+  const strongestFactor = Object.entries(creditData.factors).sort(
+    (a, b) => b[1] - a[1]
+  )[0];
+
+  const biggestOpportunity =
+    creditData.weakest === "debt"
+      ? "Reduce debt burden"
+      : creditData.weakest === "paymentBehavior"
+        ? "Build consistent repayment records"
+        : creditData.weakest === "utilization"
+          ? "Track credit utilization"
+          : "Build savings";
+
   return (
     <div className="min-h-screen bg-[#F7F9F8]">
 
@@ -262,7 +485,7 @@ export default function CreditReadiness() {
 
           <div className="flex justify-center">
 
-            <ScoreRing score={78} />
+            <ScoreRing score={creditData.readinessScore} />
 
           </div>
 
@@ -286,10 +509,9 @@ export default function CreditReadiness() {
             </h2>
 
             <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-              Your current savings buffer, repayment behavior
-              and debt level indicate that you could manage
-              moderate borrowing. A few improvements could
-              make your profile stronger.
+              Based on your saved transactions and goals, Finova estimates
+              how prepared you are for responsible borrowing. This is an
+              educational assessment, not an official credit score.
             </p>
 
 
@@ -302,7 +524,7 @@ export default function CreditReadiness() {
                 </p>
 
                 <p className="mt-1 text-lg font-bold">
-                  Strong
+                  {statusForScore(creditData.factors.paymentBehavior)}
                 </p>
 
               </div>
@@ -314,7 +536,7 @@ export default function CreditReadiness() {
                 </p>
 
                 <p className="mt-1 text-lg font-bold">
-                  Low
+                  {debtBurdenLabel}
                 </p>
 
               </div>
@@ -326,7 +548,7 @@ export default function CreditReadiness() {
                 </p>
 
                 <p className="mt-1 text-lg font-bold">
-                  Moderate
+                  {safetyBufferLabel}
                 </p>
 
               </div>
@@ -381,39 +603,47 @@ export default function CreditReadiness() {
           <FactorCard
             icon={CheckCircle2}
             title="Payment behavior"
-            score={92}
-            status="Excellent"
-            description="Your repayment history shows consistent
-            on-time behavior."
-            positive
+            score={creditData.factors.paymentBehavior}
+            status={statusForScore(creditData.factors.paymentBehavior)}
+            description={
+              creditData.debtPayments > 0
+                ? `Finova found ${creditData.debtPayments > 0 ? formatCurrency(creditData.debtPayments) : "no"} recorded Debt / Loan payments. This is only an app-data proxy, not an official repayment history.`
+                : "No Debt / Loan payments are recorded yet. Add them in Money to improve this assessment."
+            }
+            positive={creditData.factors.paymentBehavior >= 85}
           />
 
           <FactorCard
             icon={CreditCard}
             title="Credit utilization"
-            score={74}
-            status="Healthy"
-            description="Your current credit usage is within a
-            relatively comfortable range."
+            score={creditData.factors.utilization}
+            status="Limited data"
+            description="Your current transaction model does not store a credit limit, so Finova keeps this factor neutral instead of guessing your utilization."
           />
 
           <FactorCard
             icon={CircleDollarSign}
             title="Debt burden"
-            score={86}
-            status="Low"
-            description="Your existing monthly debt obligations
-            are relatively manageable."
-            positive
+            score={creditData.factors.debt}
+            status={statusForScore(creditData.factors.debt)}
+            description={
+              creditData.income > 0
+                ? `Recorded Debt / Loan payments are ${Math.round(creditData.debtRatio)}% of your recorded income.`
+                : "Add income and Debt / Loan transactions to calculate your debt-to-income ratio."
+            }
+            positive={creditData.factors.debt >= 85}
           />
 
           <FactorCard
             icon={ShieldCheck}
             title="Savings buffer"
-            score={61}
-            status="Needs attention"
-            description="Increasing your emergency savings would
-            improve your financial resilience."
+            score={creditData.factors.savingsBuffer}
+            status={statusForScore(creditData.factors.savingsBuffer)}
+            description={
+              creditData.emergencySaved > 0
+                ? `Your Emergency Fund currently covers about ${creditData.emergencyMonths.toFixed(1)} months of recorded expenses.`
+                : "Create an Emergency Fund goal and add contributions to measure your safety buffer."
+            }
           />
 
         </div>
@@ -436,65 +666,45 @@ export default function CreditReadiness() {
           <div className="flex-1">
 
             <h2 className="text-lg font-bold text-slate-900">
-              Why is your readiness score 78?
+              Why is your readiness score {creditData.readinessScore}?
             </h2>
 
             <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-              Finova combines multiple financial indicators
-              instead of relying on one number. Your strongest
-              factor is repayment behavior, while your savings
-              buffer has the largest opportunity for improvement.
+              Finova combines your saved transaction and goal data instead
+              of relying on one number. Your strongest factor is
+              {statusForScore(strongestFactor?.[1] || 0).toLowerCase()},
+              while your biggest opportunity is {biggestOpportunity.toLowerCase()}.
             </p>
 
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
               <div className="rounded-xl bg-slate-50 p-4">
-
-                <p className="text-xs text-slate-400">
-                  Payment history
-                </p>
-
+                <p className="text-xs text-slate-400">Payment behavior</p>
                 <p className="mt-1 text-lg font-bold text-slate-900">
-                  +22
+                  +{Math.round(creditData.factors.paymentBehavior * 0.25)}
                 </p>
-
               </div>
 
               <div className="rounded-xl bg-slate-50 p-4">
-
-                <p className="text-xs text-slate-400">
-                  Utilization
-                </p>
-
+                <p className="text-xs text-slate-400">Utilization</p>
                 <p className="mt-1 text-lg font-bold text-slate-900">
-                  +18
+                  +{Math.round(creditData.factors.utilization * 0.15)}
                 </p>
-
               </div>
 
               <div className="rounded-xl bg-slate-50 p-4">
-
-                <p className="text-xs text-slate-400">
-                  Debt burden
-                </p>
-
+                <p className="text-xs text-slate-400">Debt burden</p>
                 <p className="mt-1 text-lg font-bold text-slate-900">
-                  +20
+                  +{Math.round(creditData.factors.debt * 0.25)}
                 </p>
-
               </div>
 
               <div className="rounded-xl bg-slate-50 p-4">
-
-                <p className="text-xs text-slate-400">
-                  Savings buffer
-                </p>
-
+                <p className="text-xs text-slate-400">Savings buffer</p>
                 <p className="mt-1 text-lg font-bold text-slate-900">
-                  +18
+                  +{Math.round(creditData.factors.savingsBuffer * 0.2)}
                 </p>
-
               </div>
 
             </div>
@@ -540,26 +750,49 @@ export default function CreditReadiness() {
 
               <ImprovementItem
                 number="1"
-                title="Build your emergency fund"
-                description="Increase your safety buffer to at least
-                three months of essential expenses."
-                impact="+8 readiness"
+                title={
+                  creditData.emergencyMonths < 3
+                    ? "Build your emergency fund"
+                    : "Maintain your emergency fund"
+                }
+                description={
+                  creditData.emergencyMonths < 3
+                    ? "Work toward at least three months of recorded expenses before taking on new debt."
+                    : "Keep your emergency savings intact while considering new borrowing."
+                }
+                impact={
+                  creditData.emergencyMonths < 3
+                    ? "+ resilience"
+                    : "Maintain"
+                }
               />
 
               <ImprovementItem
                 number="2"
-                title="Keep credit utilization lower"
-                description="Try to maintain your revolving credit
-                usage below your preferred threshold."
-                impact="+5 readiness"
+                title={
+                  creditData.debtRatio > 20
+                    ? "Reduce your debt burden"
+                    : "Keep debt payments manageable"
+                }
+                description={
+                  creditData.income > 0
+                    ? `Your recorded Debt / Loan payments are ${Math.round(
+                        creditData.debtRatio
+                      )}% of income. Keep this ratio under control.`
+                    : "Add income and Debt / Loan transactions so Finova can measure your debt burden."
+                }
+                impact={
+                  creditData.debtRatio > 20
+                    ? "+ debt health"
+                    : "Maintain"
+                }
               />
 
               <ImprovementItem
                 number="3"
-                title="Maintain consistent repayments"
-                description="Continue making all scheduled payments
-                on time."
-                impact="+4 readiness"
+                title="Keep financial records consistent"
+                description="Continue recording income, expenses and Debt / Loan payments so Finova can make a more useful readiness assessment."
+                impact="+ data quality"
               />
 
             </div>
@@ -748,16 +981,37 @@ export default function CreditReadiness() {
             </p>
 
 
-            <div className="mt-6 flex items-start gap-3 rounded-xl bg-emerald-400/10 p-3">
+            <div className={`mt-6 flex items-start gap-3 rounded-xl p-3 ${
+              creditData.income > 0 &&
+              emi <= Math.max(0, creditData.income * 0.15 - creditData.debtPayments)
+                ? "bg-emerald-400/10"
+                : "bg-amber-400/10"
+            }`}>
 
-              <CheckCircle2
-                size={16}
-                className="mt-0.5 shrink-0 text-emerald-400"
-              />
+              {creditData.income > 0 &&
+              emi <= Math.max(0, creditData.income * 0.15 - creditData.debtPayments) ? (
+                <CheckCircle2
+                  size={16}
+                  className="mt-0.5 shrink-0 text-emerald-400"
+                />
+              ) : (
+                <AlertCircle
+                  size={16}
+                  className="mt-0.5 shrink-0 text-amber-300"
+                />
+              )}
 
-              <p className="text-xs leading-5 text-emerald-300">
-                This EMI is currently within your estimated
-                monthly repayment capacity.
+              <p className={`text-xs leading-5 ${
+                creditData.income > 0 &&
+                emi <= Math.max(0, creditData.income * 0.15 - creditData.debtPayments)
+                  ? "text-emerald-300"
+                  : "text-amber-200"
+              }`}>
+                {creditData.income <= 0
+                  ? "Add income transactions to estimate whether this EMI fits your repayment capacity."
+                  : emi <= Math.max(0, creditData.income * 0.15 - creditData.debtPayments)
+                    ? "This EMI fits within the app's estimated additional repayment capacity."
+                    : "This EMI may put pressure on your current repayment capacity."}
               </p>
 
             </div>
@@ -799,14 +1053,13 @@ export default function CreditReadiness() {
               </span>
 
               <h2 className="mt-2 text-xl font-bold text-slate-900">
-                You're close to being strongly loan-ready.
+                {readinessLabel} based on your saved financial data.
               </h2>
 
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-                Your estimated EMI is manageable based on your
-                current financial profile. However, strengthening
-                your emergency savings before taking new debt
-                would reduce your financial risk.
+                The simulated EMI is compared with your recorded income
+                and Debt / Loan payments. Before taking new debt,
+                your biggest opportunity is {biggestOpportunity.toLowerCase()}.
               </p>
 
 
@@ -819,7 +1072,7 @@ export default function CreditReadiness() {
                   </p>
 
                   <p className="mt-1 text-lg font-bold text-[#123C35]">
-                    78 / 100
+                    {creditData.readinessScore} / 100
                   </p>
 
                 </div>
@@ -843,7 +1096,7 @@ export default function CreditReadiness() {
                   </p>
 
                   <p className="mt-1 text-sm font-bold text-emerald-600">
-                    Build savings
+                    {biggestOpportunity}
                   </p>
 
                 </div>

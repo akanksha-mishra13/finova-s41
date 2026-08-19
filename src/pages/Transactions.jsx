@@ -111,6 +111,23 @@ function formatDate(date) {
   });
 }
 
+function getTransactionIcon(transaction) {
+  if (transaction.type === "Income") {
+    return transaction.category === "Freelance" ? Wallet : Banknote;
+  }
+
+  switch (transaction.category) {
+    case "Food":
+      return Utensils;
+    case "Shopping":
+      return ShoppingBag;
+    case "Transport":
+      return Car;
+    default:
+      return CreditCard;
+  }
+}
+
 function SummaryCard({ title, value, icon: Icon, type }) {
   const iconClasses = {
     income: "bg-emerald-50 text-emerald-600",
@@ -137,15 +154,17 @@ function SummaryCard({ title, value, icon: Icon, type }) {
   );
 }
 
-function AddTransactionModal({ onClose, onAdd }) {
-  const [form, setForm] = useState({
-    name: "",
-    amount: "",
-    category: "Food",
-    type: "Expense",
-    payment: "UPI",
-    date: new Date().toISOString().split("T")[0],
-  });
+function AddTransactionModal({ onClose, onAdd, initialTransaction = null }) {
+  const [form, setForm] = useState(() => ({
+    name: initialTransaction?.name || "",
+    amount: initialTransaction?.amount ?? "",
+    category: initialTransaction?.category || "Food",
+    type: initialTransaction?.type || "Expense",
+    payment: initialTransaction?.payment || "UPI",
+    date:
+      initialTransaction?.date ||
+      new Date().toISOString().split("T")[0],
+  }));
 
   function handleChange(event) {
     const { name, value } = event.target;
@@ -178,11 +197,13 @@ function AddTransactionModal({ onClose, onAdd }) {
         <div className="flex items-center justify-between border-b border-slate-200 p-6">
           <div>
             <h2 className="text-xl font-bold text-slate-900">
-              Add Transaction
+              {initialTransaction ? "Edit Transaction" : "Add Transaction"}
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
-              Add your income or expense.
+              {initialTransaction
+                ? "Update the details of this transaction."
+                : "Add your income or expense."}
             </p>
           </div>
 
@@ -322,7 +343,7 @@ function AddTransactionModal({ onClose, onAdd }) {
               type="submit"
               className="flex-1 rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
-              Add Transaction
+              {initialTransaction ? "Save Changes" : "Add Transaction"}
             </button>
 
           </div>
@@ -334,7 +355,27 @@ function AddTransactionModal({ onClose, onAdd }) {
 }
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState(initialTransactions);
+  const [transactions, setTransactions] = useState(() => {
+    try {
+      const saved = localStorage.getItem("finova_transactions");
+
+      if (!saved) return initialTransactions;
+
+      const parsed = JSON.parse(saved);
+
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return initialTransactions;
+      }
+
+      return parsed.map((transaction) => ({
+        ...transaction,
+        amount: Number(transaction.amount || 0),
+        icon: getTransactionIcon(transaction),
+      }));
+    } catch {
+      return initialTransactions;
+    }
+  });
 
   const [search, setSearch] = useState("");
 
@@ -343,6 +384,8 @@ export default function Transactions() {
   const [type, setType] = useState("All");
 
   const [showModal, setShowModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [deletingTransaction, setDeletingTransaction] = useState(null);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((transaction) => {
@@ -382,17 +425,75 @@ export default function Transactions() {
   const balance = income - expenses;
 
   function addTransaction(transaction) {
-    setTransactions((previous) => [
-      {
-        ...transaction,
-        id: Date.now(),
-        icon:
-          transaction.type === "Income"
-            ? Banknote
-            : CreditCard,
-      },
-      ...previous,
-    ]);
+    const newTransaction = {
+      ...transaction,
+      id: Date.now(),
+      amount: Number(transaction.amount || 0),
+      icon: getTransactionIcon(transaction),
+    };
+
+    setTransactions((previous) => {
+      const updated = [newTransaction, ...previous];
+
+      localStorage.setItem(
+        "finova_transactions",
+        JSON.stringify(
+          updated.map(({ icon, ...item }) => item)
+        )
+      );
+
+      return updated;
+    });
+
+    setShowModal(false);
+  }
+
+  function updateTransaction(updatedTransaction) {
+    setTransactions((previous) => {
+      const updated = previous.map((transaction) =>
+        String(transaction.id) === String(updatedTransaction.id)
+          ? {
+              ...transaction,
+              ...updatedTransaction,
+              amount: Number(updatedTransaction.amount || 0),
+              icon: getTransactionIcon(updatedTransaction),
+            }
+          : transaction
+      );
+
+      localStorage.setItem(
+        "finova_transactions",
+        JSON.stringify(
+          updated.map(({ icon, ...item }) => item)
+        )
+      );
+
+      return updated;
+    });
+
+    setEditingTransaction(null);
+  }
+
+  function deleteTransaction() {
+    if (!deletingTransaction) return;
+
+    setTransactions((previous) => {
+      const updated = previous.filter(
+        (transaction) =>
+          String(transaction.id) !== String(deletingTransaction.id)
+      );
+
+      localStorage.setItem(
+        "finova_transactions",
+        JSON.stringify(
+          updated.map(({ icon, ...item }) => item)
+        )
+      );
+
+      return updated;
+    });
+
+    setDeletingTransaction(null);
   }
 
   return (
@@ -593,6 +694,9 @@ export default function Transactions() {
                 <th className="px-6 py-4 text-right">
                   Amount
                 </th>
+                <th className="px-6 py-4 text-right">
+                  Actions
+                </th>
 
               </tr>
 
@@ -602,7 +706,7 @@ export default function Transactions() {
 
               {filteredTransactions.map((transaction) => {
 
-                const Icon = transaction.icon;
+                const Icon = getTransactionIcon(transaction);
 
                 return (
                   <tr
@@ -662,6 +766,26 @@ export default function Transactions() {
 
                     </td>
 
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingTransaction(transaction)}
+                          className="rounded-lg px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setDeletingTransaction(transaction)}
+                          className="rounded-lg px-3 py-2 text-xs font-semibold text-red-500 transition hover:bg-red-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+
                   </tr>
                 );
               })}
@@ -679,7 +803,7 @@ export default function Transactions() {
 
           {filteredTransactions.map((transaction) => {
 
-            const Icon = transaction.icon;
+            const Icon = getTransactionIcon(transaction);
 
             return (
               <div
@@ -708,16 +832,36 @@ export default function Transactions() {
 
                 </div>
 
-                <p
-                  className={`shrink-0 text-sm font-semibold ${
-                    transaction.type === "Income"
-                      ? "text-emerald-600"
-                      : "text-slate-900"
-                  }`}
-                >
-                  {transaction.type === "Income" ? "+" : "-"}
-                  {formatCurrency(transaction.amount)}
-                </p>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <p
+                    className={`text-sm font-semibold ${
+                      transaction.type === "Income"
+                        ? "text-emerald-600"
+                        : "text-slate-900"
+                    }`}
+                  >
+                    {transaction.type === "Income" ? "+" : "-"}
+                    {formatCurrency(transaction.amount)}
+                  </p>
+
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setEditingTransaction(transaction)}
+                      className="rounded-md px-2 py-1 text-[11px] font-semibold text-slate-600 hover:bg-slate-100"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDeletingTransaction(transaction)}
+                      className="rounded-md px-2 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
 
               </div>
             );
@@ -758,6 +902,55 @@ export default function Transactions() {
           onClose={() => setShowModal(false)}
           onAdd={addTransaction}
         />
+      )}
+
+      {editingTransaction && (
+        <AddTransactionModal
+          initialTransaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          onAdd={(updatedTransaction) =>
+            updateTransaction({
+              ...updatedTransaction,
+              id: editingTransaction.id,
+            })
+          }
+        />
+      )}
+
+      {deletingTransaction && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-bold text-slate-900">
+              Delete transaction?
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold text-slate-700">
+                {deletingTransaction.name}
+              </span>
+              ? This action cannot be undone.
+            </p>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingTransaction(null)}
+                className="flex-1 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={deleteTransaction}
+                className="flex-1 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
